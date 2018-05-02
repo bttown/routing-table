@@ -1,9 +1,7 @@
 package table
 
 import (
-	"bytes"
 	"encoding/json"
-	"log"
 	"net"
 	"os"
 	"sort"
@@ -69,7 +67,7 @@ func (b *bucket) addFront(c *Contact) {
 func (b *bucket) bump(c *Contact) (*Contact, bool) {
 	var original *Contact
 	for i := range b.Entries {
-		if bytes.Equal(b.Entries[i].NID[:], c.NID[:]) {
+		if b.Entries[i].NID == c.NID {
 			original = b.Entries[i]
 			copy(b.Entries[1:], b.Entries[:i])
 			b.Entries[0] = c
@@ -94,8 +92,8 @@ func NewTable(ownerID Hash, transport transport) *Table {
 		knownContacts: make(map[Hash]*Contact),
 	}
 
-	log.Println("load tdb", t.loadFromFile(t.tdbpath))
 	go t.loop()
+	log.Println("load tdb", t.loadFromFile(t.tdbpath))
 
 	return t
 }
@@ -341,15 +339,15 @@ func (h *nodesByDistance) push(c *Contact, maxElems int) {
 	}
 }
 
-func bucketid(ownid, nid Hash) int {
-	if bytes.Equal(ownid[:], nid[:]) {
+func bucketid(ownerid, nid Hash) int {
+	if ownerid == nid {
 		return 0
 	}
 	var i int
 	var bite byte
 	var bitDiff int
 	var v byte
-	for i, bite = range ownid {
+	for i, bite = range ownerid {
 		v = bite ^ nid[i]
 		switch {
 		case v > 0x70:
