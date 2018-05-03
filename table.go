@@ -16,7 +16,7 @@ const (
 
 var (
 	respTimeout       = 1 * time.Second
-	dura2backup       = 2 * time.Minute
+	dura2backup       = 1 * time.Minute
 	dura2Questionable = 15 * time.Minute
 )
 
@@ -36,8 +36,9 @@ type Table struct {
 }
 
 type bucket struct {
-	Entries  []*Contact
-	Reserves []*Contact
+	LastChanged time.Time
+	Entries     []*Contact
+	Reserves    []*Contact
 }
 
 type transport interface {
@@ -58,10 +59,16 @@ type Contact struct {
 	pingFatalTime int
 }
 
+// updateLastChangedTime ...
+func (b *bucket) updateLastChangedTime() {
+	b.LastChanged = time.Now()
+}
+
 func (b *bucket) addFront(c *Contact) {
 	b.Entries = append(b.Entries, nil)
 	copy(b.Entries[1:], b.Entries)
 	b.Entries[0] = c
+	b.updateLastChangedTime()
 }
 
 func (b *bucket) bump(c *Contact) (*Contact, bool) {
@@ -71,6 +78,7 @@ func (b *bucket) bump(c *Contact) (*Contact, bool) {
 			original = b.Entries[i]
 			copy(b.Entries[1:], b.Entries[:i])
 			b.Entries[0] = c
+			b.updateLastChangedTime()
 			return original, true
 		}
 	}
