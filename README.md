@@ -1,5 +1,7 @@
 # DHT Routing Table
 
+[![GoDoc](https://godoc.org/github.com/bttown/routing-table?status.svg)](https://godoc.org/github.com/bttown/routing-table)
+
 http://bittorrent.org/beps/bep_0005.html#routing-table
 
 Every node maintains a routing table of known good nodes. The nodes in the routing table are used as starting points for queries in the DHT. Nodes from the routing table are returned in response to queries from other nodes.

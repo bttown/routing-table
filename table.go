@@ -31,7 +31,7 @@ type Table struct {
 	eventTimers   map[timeoutEvent]*time.Timer
 	closeQ        chan struct{}
 	knownContacts map[Hash]*Contact
-	transport     transport
+	transport     Transport
 	tdbpath       string
 }
 
@@ -41,7 +41,7 @@ type bucket struct {
 	Reserves    []*Contact
 }
 
-type transport interface {
+type Transport interface {
 	Ping(*net.UDPAddr) error
 }
 
@@ -86,7 +86,8 @@ func (b *bucket) bump(c *Contact) (*Contact, bool) {
 	return nil, false
 }
 
-func NewTable(ownerID Hash, transport transport) *Table {
+// NewTable makes and return a new routing-table.
+func NewTable(ownerID Hash, transport Transport) *Table {
 	t := &Table{
 		ownid:         ownerID,
 		tdbpath:       "dump.tdb",
@@ -116,6 +117,7 @@ func (table *Table) Closest(target Hash, nresults int) *nodesByDistance {
 	return close
 }
 
+// Stop releases resource and save snapshot.
 func (table *Table) Stop() {
 	close(table.closeQ)
 	table.saveToFile(table.tdbpath)
