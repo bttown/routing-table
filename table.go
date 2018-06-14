@@ -1,7 +1,9 @@
 package table
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"sort"
@@ -59,6 +61,10 @@ type Contact struct {
 	pingFatalTime int
 }
 
+func (c *Contact) String() string {
+	return fmt.Sprintf("<Contact ID:%s UDP:%s>", hex.EncodeToString(c.NID[:]), c.UDPAddr.String())
+}
+
 // updateLastChangedTime ...
 func (b *bucket) updateLastChangedTime() {
 	b.LastChanged = time.Now()
@@ -101,14 +107,22 @@ func NewTable(ownerID Hash, transport Transport) *Table {
 		knownContacts: make(map[Hash]*Contact),
 	}
 
+	for i := range t.buckets {
+		t.buckets[i] = &bucket{
+			Entries:  make([]*Contact, 0),
+			Reserves: make([]*Contact, 0),
+		}
+	}
+
 	go t.loop()
-	log.Println("load tdb", t.loadFromFile(t.tdbpath))
+	log.Println("try to loading routing-table", t.loadFromFile(t.tdbpath))
 
 	return t
 }
 
-func (table *Table) Closest(target Hash, nresults int) *nodesByDistance {
-	close := &nodesByDistance{target: target}
+// Closest ...
+func (table *Table) Closest(target Hash, nresults int) *NodesByDistance {
+	close := &NodesByDistance{target: target}
 	for _, b := range table.buckets {
 		for _, n := range b.Entries {
 			close.push(n, nresults)
@@ -123,6 +137,7 @@ func (table *Table) Stop() {
 	table.saveToFile(table.tdbpath)
 }
 
+// OwnerID returns owner node id.
 func (table *Table) OwnerID() Hash {
 	return table.ownid
 }
@@ -184,7 +199,7 @@ func (table *Table) loop() {
 		case contact := <-table.packets:
 			table.update(contact)
 		case <-backupTicker.C:
-			log.Println("tdb backup", table.saveToFile(table.tdbpath))
+			log.Println("routing-table backup", table.saveToFile(table.tdbpath))
 			backupTicker.Reset(dura2backup)
 		}
 	}
@@ -286,11 +301,11 @@ func (table *Table) deleteReplace(c *Contact) {
 
 func (table *Table) add(n *Contact) {
 	bktid := bucketid(table.ownid, n.NID)
-	bkt := table.buckets[bktid]
-	if bkt == nil {
-		bkt = &bucket{}
-		table.buckets[bktid] = bkt
+	if bktid >= len(table.buckets) {
+		log.Println("invalid bucket id", bktid, n.NID)
+		return
 	}
+	bkt := table.buckets[bktid]
 	original, bumped := bkt.bump(n)
 	switch {
 	case bumped:
@@ -326,12 +341,16 @@ func distcmp(target, a, b Hash) int {
 	return 0
 }
 
-type nodesByDistance struct {
+type NodesByDistance struct {
 	entries []*Contact
 	target  Hash
 }
 
-func (h *nodesByDistance) push(c *Contact, maxElems int) {
+func (h *NodesByDistance) Entries() []*Contact {
+	return h.entries
+}
+
+func (h *NodesByDistance) push(c *Contact, maxElems int) {
 	ix := sort.Search(len(h.entries), func(i int) bool {
 		return distcmp(h.target, h.entries[i].NID, c.NID) > 0
 	})
