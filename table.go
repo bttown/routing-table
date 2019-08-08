@@ -305,6 +305,8 @@ func (table *Table) add(n *Contact) {
 		log.Println("invalid bucket id", bktid, n.NID)
 		return
 	}
+
+	log.Println("handle new node", n.UDPAddr)
 	bkt := table.buckets[bktid]
 	original, bumped := bkt.bump(n)
 	switch {
