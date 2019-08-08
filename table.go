@@ -133,8 +133,8 @@ func (table *Table) Closest(target Hash, nresults int) *NodesByDistance {
 
 // Stop releases resource and save snapshot.
 func (table *Table) Stop() {
-	close(table.closeQ)
 	table.saveToFile(table.tdbpath)
+	close(table.closeQ)
 }
 
 // OwnerID returns owner node id.
