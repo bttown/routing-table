@@ -133,7 +133,7 @@ func (table *Table) Closest(target Hash, nresults int) *NodesByDistance {
 
 // Stop releases resource and save snapshot.
 func (table *Table) Stop() {
-	table.saveToFile(table.tdbpath)
+	// table.saveToFile(table.tdbpath)
 	close(table.closeQ)
 }
 
