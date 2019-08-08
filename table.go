@@ -306,7 +306,7 @@ func (table *Table) add(n *Contact) {
 		return
 	}
 
-	log.Println("\033[2Ahandle new node", n.UDPAddr)
+	log.Println("\033[1Ahandle new node", n.UDPAddr)
 	bkt := table.buckets[bktid]
 	original, bumped := bkt.bump(n)
 	switch {
